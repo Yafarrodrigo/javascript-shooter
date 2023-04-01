@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>jeje</title>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <style>
+        body{
+            background-color: black;
+            color: white;
+        }
+        canvas{
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #game2{
+            pointer-events: none;
+        }
+    </style>
+    <canvas id="game" width="800" height="800"></canvas>
+    <canvas id="game2" width="800" height="800"></canvas>
+
+    
+    <script type="module">
+        import Game from './js/Game.js'
+        const socket = io('http://192.168.0.19:3000')
+        socket.on('hello', ({msg}) => console.log(msg)) 
+
+        const game = new Game()
+
+        function tick(dt){
+            game.update(dt)
+            window.requestAnimationFrame(tick)
+        }
+
+        window.requestAnimationFrame(tick)
+
+    </script>
+</body>
+</html>
