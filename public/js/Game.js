@@ -3,9 +3,11 @@ import Enemy from './classes/Enemy.js'
 import Graphics from './classes/Graphics.js'
 import Map from './classes/Map.js'
 import Player from './classes/Player.js'
+import Utils from './classes/Utils.js'
 
 export default class Game{
     constructor(){
+        this.tileSize = 50
         this.map = new Map(this)
         this.player = new Player(this)
         this.graphics = new Graphics(this)
@@ -18,7 +20,7 @@ export default class Game{
             centerLines: false,
             tileNumbers: false,
             playerDirection: false,
-            showFullMap: false, // TODO
+            showFullMap: false,
             lineToMouse: false,
             showEnemyRanges: true,
             showEnemyPaths: true
@@ -51,32 +53,28 @@ export default class Game{
     }
 
     spawnEnemies(){
-        const {x: playerX,y: playerY } = this.player.position
-        const {tileSize} = this.graphics
+        const {x: playerX,y: playerY } = this.player
+        const {tileSize} = this
 
         for(let i = 0; i < this.enemyGroups; i++){
             let  tile = this.map.getRandomFloorTile()
-            while(this.distance(tile.x, playerX/tileSize, tile.y, playerY/tileSize) < 10){
+            while(Utils.distanceEuclidean(tile.x, playerX/tileSize, tile.y, playerY/tileSize) < 10){
                 tile = this.map.getRandomFloorTile()
             }
             this.spawnGroupOfEnemies(tile.x * tileSize, tile.y * tileSize, this.enemiesPerGroup, 150)
         }
     }
 
-    distance(x0,x1,y0,y1){
-        return Math.sqrt((x1-x0)*(x1-x0) + (y1-y0)*(y1-y0))
-    }
-
     spawnGroupOfEnemies(spawnX, spawnY, qty, separation){
         for(let i = 0; i < qty; i++){
             
             try {
-                let rndY = Math.random() < 0.5 ? Math.floor(Math.random()*separation) : Math.floor(Math.random()*(-separation))
-                let rndX = Math.random() < 0.5 ? Math.floor(Math.random()*separation) : Math.floor(Math.random()*(-separation))
+                let rndY = Utils.randomBool() ? Utils.random(0,separation) : Utils.random(0,separation)*(-1)
+                let rndX = Utils.randomBool() ? Utils.random(0,separation) : Utils.random(0,separation)*(-1)
                 const newEnemy = new Enemy(this, spawnX + rndX, spawnY + rndY, 100)
                 let insideWall = this.map.getTileAt(
-                    newEnemy.position.x - this.graphics.tileSize/2,
-                    newEnemy.position.y - this.graphics.tileSize/2
+                    newEnemy.x - this.tileSize/2,
+                    newEnemy.y - this.tileSize/2
                     ).isWall
     
                 if(!insideWall){
@@ -95,6 +93,15 @@ export default class Game{
     update(dt){
 
         this.dt = dt
+
+        if(this.DEBUG.showFullMap){
+            this.tileSize = 5
+            this.player.x = 200
+            this.player.y = 200
+        }
+        else{
+            this.tileSize = 50
+        }
 
         this.activeBullets.forEach( bullet => {
             if(!bullet.active){

@@ -8,6 +8,7 @@ export default class Controls{
         this.RIGHT = false
         this.UP = false
         this.DOWN = false
+        this.SHIFT = false
 
         this.mouseDown = false
 
@@ -19,13 +20,25 @@ export default class Controls{
         this.game.graphics.canvas.addEventListener('mousedown', (e) => {
             if(e.which === 1){          // LEFT CLICK
                 this.mouseDown = true
-                /* if(!this.game.player.weapon.reloading) {
-                    this.game.player.fireWeapon(true)
-                } */
             }
         })
         this.game.graphics.canvas.addEventListener('mouseup', (e) => {
             this.mouseDown = false
+
+
+            // CLICK TILE
+            if(e.which === 3){
+                const {tileSize} = this.game
+                const {viewport} = this.game.graphics
+
+                const rect = this.game.graphics.canvas.getBoundingClientRect();
+
+                const x = Math.floor(e.clientX - rect.left) - viewport.offset.x - tileSize/2
+                const y = Math.floor(e.clientY - rect.top) - viewport.offset.y - tileSize/2
+                const tile = this.game.map.getTileAt(x,y)
+
+                console.log(tile);
+            }
         })
 
         this.game.graphics.canvas.addEventListener('contextmenu', (e) => {
@@ -59,6 +72,22 @@ export default class Controls{
                 case "s":
                     this.DOWN = true
                     break;
+                
+                case "Shift":
+                    if(this.game.player.stamina >= 25){
+                        this.SHIFT = true
+                    }
+                    break;
+
+                case "1":
+                    this.game.player.selectWeapon(0)
+                    break
+                case "2":
+                    this.game.player.selectWeapon(1)
+                    break
+                case "3":
+                    this.game.player.selectWeapon(2)
+                    break
             }
         })
         document.addEventListener('keyup', (e) => {
@@ -80,28 +109,18 @@ export default class Controls{
                     this.DOWN = false
                     break;
 
+                case "Shift":
+                    this.SHIFT = false
+                    break;
+
                 case "R":
                 case "r":
-                    if(this.game.player.selectedWeapon.rounds < this.game.player.selectedWeapon.maxRounds && !this.game.player.selectedWeapon.reloading){
                         this.game.player.startReload()
-                    }
                     break
 
                 case "Q":
                 case "q":
-                    if(this.game.player.selectedWeapon.type === "rifle") this.game.player.selectedWeapon = this.game.player.weapons[1]
-                    else if(this.game.player.selectedWeapon.type === "shotgun") this.game.player.selectedWeapon = this.game.player.weapons[2]
-                    else if(this.game.player.selectedWeapon.type === "pistol") this.game.player.selectedWeapon = this.game.player.weapons[0]
-                    break
-
-                case "1":
-                    this.game.player.selectedWeapon = this.game.player.weapons[0]
-                    break
-                case "2":
-                    this.game.player.selectedWeapon = this.game.player.weapons[1]
-                    break
-                case "3":
-                    this.game.player.selectedWeapon = this.game.player.weapons[2]
+                    this.game.player.cycleWeapons()
                     break
             }
         })

@@ -1,4 +1,5 @@
 import Tile from "./Tile.js"
+import Utils from "./Utils.js"
 
 export default class MapGenerator{
 
@@ -6,7 +7,7 @@ export default class MapGenerator{
     diagonalDirections = [{x:1,y:1},{x:1,y:-1},{x:-1,y:-1},{x:-1,y:1}] // upRight - downRight - downLeft - downRight
     allDirections = [{x:0,y:1},{x:1,y:1},{x:1,y:0},{x:1,y:-1},{x:0,y:-1},{x:-1,y:-1},{x:-1,y:0},{x:-1,y:1}] // todo
 
-    constructor({startPos, iterations, walkLength, startRandom, corridorLength, corridorCount, roomPercent}){
+    constructor({startPos, iterations, walkLength, startRandom, corridorLength, corridorCount, roomPercent, tileSize}){
         this.startPos = startPos
         this.iterations = iterations
         this.walkLength = walkLength
@@ -16,6 +17,7 @@ export default class MapGenerator{
         this.roomPercent = roomPercent
         this.maxWidth = 0
         this.maxHeight = 0
+        this.tileSize = tileSize
     }
 
     generateMap(){
@@ -54,21 +56,21 @@ export default class MapGenerator{
             for(let y = 0; y < mapHeight; y++){
 
                 let tile = map.find( e => e.x === x+minX && e.y === y+minY)
-                if(x < finalWallThickness || y < finalWallThickness || x > mapWidth- 1-finalWallThickness || y > mapHeight- 1-finalWallThickness){
-                    result[x][y] = new Tile(x,y, true, false,"", false)
+                if(x < finalWallThickness || y < finalWallThickness || x >= mapWidth- 1-finalWallThickness || y >= mapHeight- 1-finalWallThickness){
+                    result[x][y] = new Tile(x,y,this.tileSize, true, false,"", false)
                 }
                 else if(tile){
                     if(tile.isWall){
-                        result[x][y] = new Tile(tile.x+offsetX, tile.y+offsetY, true, false, tile.wallNeighbours, false)
+                        result[x][y] = new Tile(tile.x+offsetX, tile.y+offsetY,this.tileSize, true, false, tile.wallNeighbours, false)
                     }else{
                         if(tile.x === map[0].x && tile.y === map[0].y){
-                            result[x][y] = new Tile(tile.x+offsetX, tile.y+offsetY, false, false,"", true)
+                            result[x][y] = new Tile(tile.x+offsetX, tile.y+offsetY,this.tileSize, false, false,"", true)
                         }else{
-                            result[x][y] = new Tile(tile.x+offsetX, tile.y+offsetY, false, false,"", false)
+                            result[x][y] = new Tile(tile.x+offsetX, tile.y+offsetY,this.tileSize, false, false,"", false)
                         }
                     }
                 }else{
-                    result[x][y] = new Tile(x,y, true, true,"", false)
+                    result[x][y] = new Tile(x,y,this.tileSize, true, true,"", false)
                 }
             }
         }
@@ -92,10 +94,16 @@ export default class MapGenerator{
     addNeighbours(map){
         for(let x = 0; x < map.length; x++){
             for(let y = 0; y < map[0].length; y++){
+                // 4 directions
                 if(x > 0) map[x][y].neighbours.push(map[x-1][y])
                 if(x < map.length -1) map[x][y].neighbours.push(map[x+1][y])
                 if(y < map[0].length- 1) map[x][y].neighbours.push(map[x][y+1])
                 if(y > 0) map[x][y].neighbours.push(map[x][y-1])
+                // diagonals
+                // if(x > 0 && y > 0) map[x][y].neighbours.push(map[x-1][y-1])
+                // if(x < map.length -1 && y > 0) map[x][y].neighbours.push(map[x+1][y-1])
+                // if(y < map[0].length- 1 && x > 0) map[x][y].neighbours.push(map[x-1][y+1])
+                // if(y < map[0].length- 1 && x < map.length - 1) map[x][y].neighbours.push(map[x+1][y+1])
             }
         }
     }
@@ -161,7 +169,7 @@ export default class MapGenerator{
         let roomPositions = new Set()
         const roomsToCreateCount = Math.round(potentialRoomPositions.size * roomPercent)
 
-        let roomToCreate = [...potentialRoomPositions].sort(()=>Math.random() > 0.5).slice(0,roomsToCreateCount)
+        let roomToCreate = [...potentialRoomPositions].sort(()=>Utils.randomBool()).slice(0,roomsToCreateCount)
         
         for(let i = 0; i < roomToCreate.length; i++){
             const newRoomFloor = this.generateFloor({x:roomToCreate[i].x, y:roomToCreate[i].y, isWall:false},this.iterations,this.walkLength,this.startRandom)
@@ -180,7 +188,7 @@ export default class MapGenerator{
             floorPositions = new Set([...floorPositions, ...path])
             
             if(startRandom === true){
-                currentPos = [...floorPositions][Math.floor(Math.random()*floorPositions.size)]
+                currentPos = [...floorPositions][Utils.random(0,floorPositions.size-1)]
             }
         }
 
@@ -216,7 +224,7 @@ export default class MapGenerator{
     }
 
     getRandomDirection(){
-        return this.directions[Math.floor(Math.random()*4)]
+        return this.directions[Utils.random(0,3)]
     }
 
     generateWalls(floorPositions){

@@ -1,4 +1,5 @@
 import MapGenerator from './MapGenerator.js'
+import Utils from './Utils.js'
 
 export default class Map{
     constructor(game){
@@ -9,10 +10,43 @@ export default class Map{
             iterations: 5,
             walkLength: 50,
             startRandom: true,
+            corridorLength: 5,
+            corridorCount: 10,
+            roomPercent: 1
+        })
+
+        // standard
+        /* {
+            startPos: {x:0,y:0, isWall:false},
+            iterations: 5,
+            walkLength: 50,
+            startRandom: true,
             corridorLength: 15,
             corridorCount: 5,
             roomPercent: 1
-        })
+        } */
+
+        // pasillos largos
+        /* {
+            startPos: {x:0,y:0, isWall:false},
+            iterations: 5,
+            walkLength: 50,
+            startRandom: true,
+            corridorLength: 25,
+            corridorCount: 10,
+            roomPercent: 1
+        } */
+
+        // area abierta
+        /* {
+            startPos: {x:0,y:0, isWall:false},
+            iterations: 5,
+            walkLength: 50,
+            startRandom: true,
+            corridorLength: 5,
+            corridorCount: 10,
+            roomPercent: 1
+        } */
 
         const {floors,walls} = this.mapGen.generateMap2()
         this.floors = floors
@@ -45,7 +79,7 @@ export default class Map{
         let counter = 0
 
         startTile.g = 0;
-        startTile.h = this.distance(startTile.x, endTile.x, startTile.y, endTile.y);
+        startTile.h = Utils.distanceManhattan(startTile.x, endTile.x, startTile.y, endTile.y);
         startTile.f = startTile.g + startTile.h;
 
         while ((openSet.length > 0) || counter < 1000) {
@@ -77,7 +111,7 @@ export default class Map{
             let neighbours = currentTile.neighbours || []
             
             for (let i = 0; i < neighbours.length; i++) {
-                let neighbourTile = currentTile.neighbours[i];
+                let neighbourTile = currentTile.neighbours[i]
 
                 if(closedSet.includes(neighbourTile) || neighbourTile.isWall){
                     continue;
@@ -87,7 +121,7 @@ export default class Map{
 
                 if (!openSet.includes(neighbourTile)){
                     gScoreBest = true
-                    neighbourTile.h = this.game.distance(neighbourTile.x, endTile.x,neighbourTile.y, endTile.y);
+                    neighbourTile.h = Utils.distanceEuclidean(neighbourTile.x, endTile.x,neighbourTile.y, endTile.y);
                     openSet.push(neighbourTile)
                 }
                 else if(tentativeGScore < neighbourTile.g){
@@ -105,19 +139,6 @@ export default class Map{
         return [];
     }
 
-    removeFromArray(arr, elem){
-        for(let i = arr.length-1; i >= 0; i--){
-            if(arr[i].x === elem.x && arr[i].y === elem.y){
-                arr.splice(i,1)
-            }
-        }
-    }
-
-    distance(x0,x1,y0,y1){
-        const x = Math.abs(x1 - x0)
-        const y = Math.abs(y1 - y0)
-        return x+y
-    }
 
     firstFloorTile(){
         let result = {x:0,y:0}
@@ -133,27 +154,20 @@ export default class Map{
     }
 
     getTileAt(x,y){
-        const {tileSize} = this.game.graphics
+        const {tileSize} = this.game
         const xx = Math.round(Math.abs(x/tileSize))
         const yy = Math.round(Math.abs(y/tileSize))
         return this.tileMap[xx][yy]
     }
     getTileAt2(x,y){
-        const {tileSize} = this.game.graphics
+        const {tileSize} = this.game
         const xx = Math.floor(Math.abs(x/tileSize))
         const yy = Math.floor(Math.abs(y/tileSize))
         return this.tileMap[xx][yy]
     }
-
-    getTileAt3(x,y){
-        const {tileSize} = this.game.graphics
-        const xx = Math.abs(x%tileSize)
-        const yy = Math.abs(y%tileSize)
-        return this.tileMap[xx][yy]
-    }
-
+    
     getRandomFloorTile(){
-        let rndFloor = this.onlyFloors[Math.floor(Math.random()*this.onlyFloors.length)]
+        let rndFloor = this.onlyFloors[Utils.random(0,this.onlyFloors.length-1)]
         return rndFloor
     }
 }

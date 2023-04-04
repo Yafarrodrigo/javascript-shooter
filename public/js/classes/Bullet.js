@@ -1,7 +1,9 @@
 import _WEAPONS from "../_weapons.js"
+import Utils from "./Utils.js"
 
 export default class Bullet{
     constructor(game,weaponId, x, y){
+        const {player,graphics, controls} = game
         this.game = game
         this.id = this.game.idgen++
         this.x = x,
@@ -12,14 +14,15 @@ export default class Bullet{
         this.size = _WEAPONS[weaponId].bulletSize
         this.active = true
         this.hitSomething = false
-        this.direction = this.game.player.normalizeVector(this.game.player.direction.x, this.game.player.direction.y)
+        this.direction = Utils.normalizeVector(player.direction.x, player.direction.y)
         this.enemiesHit = 0
+
 
         if (weaponId === "shotgun"){
             const spread = 25
-            const rndX = Math.random() < 0.5 ? Math.floor(Math.random()*spread) : Math.floor(Math.random()*(-spread))
-            const rndY = Math.random() < 0.5 ? Math.floor(Math.random()*spread) : Math.floor(Math.random()*(-spread))
-            this.direction = this.game.player.normalizeVector(this.game.controls.cursor.x - 400 + rndX, this.game.controls.cursor.y - 400 + rndY)
+            const rndX = Utils.randomBool() ? Utils.random(0,spread) : Utils.random(0,spread)*(-1)
+            const rndY = Utils.randomBool() ? Utils.random(0,spread) : Utils.random(0,spread)*(-1)
+            this.direction = Utils.normalizeVector(controls.cursor.x - (graphics.width/2) + rndX, controls.cursor.y - (graphics.height/2) + rndY)
         }
         
         const finalXspeed = this.baseSpeed * this.direction.x
@@ -30,13 +33,15 @@ export default class Bullet{
 
     update(){
 
-        if(this.x/this.game.graphics.tileSize > 800 || this.x/this.game.graphics.tileSize < 0 || this.y/this.game.graphics.tileSize < 0 || this.y/this.game.graphics.tileSize > 800 || this.hitSomething){
+        const {graphics, tileSize} = this.game
+
+        if(this.x/tileSize > graphics.width || this.x/tileSize < 0 || this.y/tileSize < 0 || this.y/tileSize > graphics.height || this.hitSomething){
             this.active = false
             return
         }
 
-        const newX = this.x + (this.speed.x/2) - this.game.graphics.tileSize/2
-        const newY = this.y + (this.speed.y/2)  - this.game.graphics.tileSize/2
+        const newX = this.x + (this.speed.x/2) - tileSize/2
+        const newY = this.y + (this.speed.y/2)  - tileSize/2
         const nextTile = this.game.map.getTileAt(newX,newY)
 
         if(nextTile.isWall){
@@ -45,7 +50,7 @@ export default class Bullet{
         }
 
         this.game.enemies.forEach( enemy => {
-            if(Math.abs(this.x - enemy.position.x) < (enemy.size - 2) && Math.abs(this.y - enemy.position.y) < (enemy.size - 2)){
+            if(Math.abs(this.x - enemy.x) < (enemy.size - 2) && Math.abs(this.y - enemy.y) < (enemy.size - 2)){
                 if(this.active){
                     if(enemy.state === "waiting") enemy.alert()
                     if(enemy.hp - this.damage > 0) enemy.hp -= this.damage

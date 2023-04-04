@@ -1,11 +1,14 @@
+import Utils from "./Utils.js"
+
 export default class Enemy{
     constructor(game, x,y,hp){
         this.game = game
         this.id = this.game.idgen++
-        this.position = {x,y}
+        this.x = x,
+        this.y = y
         this.speed = {x:3,y:3}
         this.maxSpeed = 0.1
-        this.angle = Math.random() * (Math.PI) * [1,-1][Math.floor(Math.random()*2)]
+        this.angle = Utils.random(0,Math.PI) * [1,-1][Utils.random(0,1)]
         this.moving = {
             UP: false,
             DOWN: false,
@@ -13,7 +16,7 @@ export default class Enemy{
             RIGHT: false
         }
         this.acceleration = 0.01
-        this.size = this.game.graphics.tileSize/2
+        this.size = this.game.tileSize/2
         this.hp = hp
         this.maxHp = hp
         this.damage = 10
@@ -34,7 +37,7 @@ export default class Enemy{
 
     attackPlayer(){
         const {player} = this.game
-        const dist = this.game.distance(this.position.x,player.position.x,this.position.y,player.position.y)
+        const dist = Utils.distanceEuclidean(this.x,player.x,this.y,player.y)
         console.log("attacking");
         console.log(dist);
         if(!this.recentlyAttacked && dist <= 25){
@@ -51,10 +54,10 @@ export default class Enemy{
 
     searchPlayer(){
         const {map, player} = this.game
-        const {tileSize} = this.game.graphics
+        const {tileSize} = this.game
         try {
-            const playerTile = map.getTileAt(player.position.x-(tileSize/2), player.position.y-(tileSize/2))
-            const meTile = map.getTileAt(this.position.x-(tileSize/2), this.position.y-(tileSize/2))
+            const playerTile = map.getTileAt(player.x-(tileSize/2), player.y-(tileSize/2))
+            const meTile = map.getTileAt(this.x-(tileSize/2), this.y-(tileSize/2))
             let path = this.game.map.findPath(meTile, playerTile)
             this.pathToPlayer = path
             this.pathToPlayerIndex = 1
@@ -70,14 +73,14 @@ export default class Enemy{
 
     update(){
         
-        const dist = this.game.distance(this.position.x,this.game.player.position.x,this.position.y,this.game.player.position.y)
+        const dist = Utils.distanceEuclidean(this.x,this.game.player.x,this.y,this.game.player.y)
         const timeSinceLastAttack = Math.round(this.game.dt - this.recentlyAttackedTime)
         if(timeSinceLastAttack > 250){
             this.recentlyAttacked = false
         }
         if(dist < 50){
-            const {x,y} = this.position
-            const {x:px,y:py} = this.game.player.position
+            const {x,y} = this
+            const {x:px,y:py} = this.game.player
             this.angle =  Math.atan2(px - x, py - y) - Math.PI/2
             this.clearPathToPlayer()
             this.moveToPlayer()
@@ -93,9 +96,9 @@ export default class Enemy{
     }
 
     moveToPlayer(){
-        const {x,y} = this.position
-        const {x:px,y:py} = this.game.player.position
-        const {tileSize} = this.game.graphics
+        const {x,y} = this
+        const {x:px,y:py} = this.game.player
+        const {tileSize} = this.game
 
         if(x > px){
             this.moving.LEFT = true
@@ -128,7 +131,7 @@ export default class Enemy{
             const newY = y + this.speed.y - tileSize/2
             const nextTile = this.game.map.getTileAt(newX,newY)
             if(!nextTile.isWall){
-                this.position.y += this.speed.y
+                this.y += this.speed.y
             }  
         }
         if(this.moving.LEFT || this.moving.RIGHT){
@@ -136,14 +139,14 @@ export default class Enemy{
             const newY = y - tileSize/2
             const nextTile = this.game.map.getTileAt(newX,newY)
             if(!nextTile.isWall){
-                this.position.x += this.speed.x
+                this.x += this.speed.x
             }
         }   
     }
     
     moveToPlayerTile(){
-        const {tileSize} = this.game.graphics
-        const {x,y} = this.position
+        const {tileSize} = this.game
+        const {x,y} = this
 
         this.speed = {x:3,y:3}
         if(!this.pathToPlayer[this.pathToPlayerIndex]){
@@ -156,10 +159,10 @@ export default class Enemy{
         const targetY = (targetTile.y * tileSize) + (tileSize/2)
 
         if(enemyTile !== targetTile){
-            if(x < targetX) {this.position.x += this.speed.x;this.angle = 0}
-            else if(x > targetX) {this.position.x -= this.speed.x;this.angle = -Math.PI}
-            if(y < targetY) {this.position.y += this.speed.y;this.angle = Math.PI/2}
-            else if(y > targetY) {this.position.y -= this.speed.y;this.angle = -Math.PI/2}
+            if(x < targetX) {this.x += this.speed.x;this.angle = 0}
+            else if(x > targetX) {this.x -= this.speed.x;this.angle = -Math.PI}
+            if(y < targetY) {this.y += this.speed.y;this.angle = Math.PI/2}
+            else if(y > targetY) {this.y -= this.speed.y;this.angle = -Math.PI/2}
         }else{
             if((this.pathToPlayerIndex + 1) <= this.pathToPlayer.length){
                 this.pathToPlayerIndex += 1

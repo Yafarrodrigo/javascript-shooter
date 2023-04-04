@@ -2,15 +2,21 @@ export default class Graphics{
     constructor(game){
         this.game = game
 
+        this.width = window.innerWidth
+        this.height = window.innerHeight
+
         this.canvas = document.getElementById('game')
+        this.canvas.width = this.width
+        this.canvas.height = this.height
         this.ctx = this.canvas.getContext('2d')
 
         this.canvas2 = document.getElementById('game2')
+        this.canvas2.width = this.width
+        this.canvas2.height = this.height
         this.ctx2 = this.canvas.getContext('2d')
 
         this.ctx.fillStyle = "#111"
-        this.ctx.fillRect(0,0,800,800)
-                this.tileSize = 50
+        this.ctx.fillRect(0,0,this.width,this.height)
 
         this.wallTile = new Image()
         this.wallTile.src = "../imgs/wall.jpg"
@@ -45,17 +51,26 @@ export default class Graphics{
         ]
 
         this.viewport = {
-            screen: {x:800,y:800},
+            screen: {x:this.width,y:this.height},
             startTile: {x:0,y:0},
             endTile: {x:0,y:0},
             offset: {x:0,y:0}
+        }
+
+        window.onresize = (e) =>{
+            this.width = window.innerWidth
+            this.height = window.innerHeight
+            this.canvas.width = window.innerWidth
+            this.canvas.height = window.innerHeight
+            this.canvas2.width = window.innerWidth
+            this.canvas2.height = window.innerHeight
         }
     }
 
     drawLineToMouse(){
         const {ctx2, viewport} = this
         const {cursor} = this.game.controls
-        const {x,y} = this.game.player.position
+        const {x,y} = this.game.player
 
         const px = x + viewport.offset.x
         const py = y + viewport.offset.y
@@ -87,22 +102,28 @@ export default class Graphics{
     }
 
     updateViewport(targetX,targetY){
+        
+        const {tileSize} = this.game
+
+        this.viewport.screen.x = window.innerWidth
+        this.viewport.screen.y = window.innerHeight
+
         this.viewport.offset.x = Math.floor((this.viewport.screen.x/2) - Math.round(targetX))
         this.viewport.offset.y = Math.floor((this.viewport.screen.y/2) - Math.round(targetY))
 
         const tile = {
-            x:Math.floor(targetX/this.tileSize),
-            y:Math.floor(targetY/this.tileSize)
+            x:Math.floor(targetX/tileSize),
+            y:Math.floor(targetY/tileSize)
         }
 
-        this.viewport.startTile.x = tile.x - 1 - Math.ceil((this.viewport.screen.x/2) / this.tileSize)
-        this.viewport.startTile.y = tile.y - 1 - Math.ceil((this.viewport.screen.y/2) / this.tileSize)  
+        this.viewport.startTile.x = tile.x - 1 - Math.ceil((this.viewport.screen.x/2) / tileSize)
+        this.viewport.startTile.y = tile.y - 1 - Math.ceil((this.viewport.screen.y/2) / tileSize)  
 
         if(this.viewport.startTile.x < 0) this.viewport.startTile.x = 0
         if(this.viewport.startTile.y < 0) this.viewport.startTile.y = 0
 
-        this.viewport.endTile.x = tile.x + 1 + Math.ceil((this.viewport.screen.x/2) / this.tileSize)
-        this.viewport.endTile.y = tile.y + 1 + Math.ceil((this.viewport.screen.y/2) / this.tileSize)
+        this.viewport.endTile.x = tile.x + 1 + Math.ceil((this.viewport.screen.x/2) / tileSize)
+        this.viewport.endTile.y = tile.y + 1 + Math.ceil((this.viewport.screen.y/2) / tileSize)
 
         if(this.viewport.endTile.x >= this.game.map.widthInTiles) this.viewport.endTile.x = this.game.map.widthInTiles -1
         if(this.viewport.endTile.y >= this.game.map.heightInTiles) this.viewport.endTile.y = this.game.map.heightInTiles -1
@@ -111,8 +132,8 @@ export default class Graphics{
     drawViewport(){
 
         this.ctx.fillStyle = "#111"
-        this.ctx.fillRect(0,0,800,800)
-        this.ctx2.clearRect(0,0,800,800)
+        this.ctx.fillRect(0,0,this.width,this.height)
+        this.ctx2.clearRect(0,0,this.width,this.height)
 
         
         for(let x = this.viewport.startTile.x; x < this.viewport.endTile.x; x++){
@@ -121,8 +142,8 @@ export default class Graphics{
                 let tile = this.game.map.tileMap[x][y]
 
                 // ??????????? => profit !
-                const finalX = (x * this.tileSize) + this.viewport.offset.x
-                const finalY = (y * this.tileSize) + this.viewport.offset.y
+                const finalX = (x * this.game.tileSize) + this.viewport.offset.x
+                const finalY = (y * this.game.tileSize) + this.viewport.offset.y
 
                 if(tile.isWall === true && tile.outOfMap === false){        // WALLS
                     this.ctx.fillStyle = "#111"
@@ -130,15 +151,15 @@ export default class Graphics{
                         this.wallTile,
                         finalX,
                         finalY,
-                        this.tileSize - 1,this.tileSize - 1)
+                        this.game.tileSize - 1,this.game.tileSize - 1)
 
                 }else if(tile.isWall === false && tile.outOfMap === false){ // FLOORS
                     this.ctx.drawImage(
                         this.floorTiles[tile.floorTileNumber],
                         finalX,
                         finalY,
-                        this.tileSize - 1,
-                        this.tileSize - 1
+                        this.game.tileSize - 1,
+                        this.game.tileSize - 1
                     )
                 }
                 else{                                                        // BORDERS
@@ -146,8 +167,8 @@ export default class Graphics{
                         this.outOfMapTile,
                         finalX,
                         finalY,
-                        this.tileSize - 1,
-                        this.tileSize - 1
+                        this.game.tileSize - 1,
+                        this.game.tileSize - 1
                     )
                 }
 
@@ -162,38 +183,41 @@ export default class Graphics{
 
     drawPlayer(){
 
-        this.ctx2.save()
-        this.ctx2.translate(400,400);
-        this.ctx2.rotate(this.game.player.playerAngle)
-        this.ctx2.translate(-400, -400); 
+        const finalX = this.game.player.x + this.viewport.offset.x -(this.game.player.size/2)
+        const finalY = this.game.player.y + this.viewport.offset.y -(this.game.player.size/2)
 
+        this.ctx2.save()
+        this.ctx2.translate(this.game.graphics.width/2,this.game.graphics.height/2);
+        this.ctx2.rotate(this.game.player.playerAngle)
+        this.ctx2.translate(-this.game.graphics.width/2,-this.game.graphics.height/2); 
+        
         this.ctx2.fillStyle = "green"
-        //this.ctx2.fillRect(400-(this.tileSize/4),400-(this.tileSize/4),this.tileSize/2,this.tileSize/2)
+        
         this.ctx2.drawImage(
             this.playerTile,
-            400-(this.tileSize/2),
-            400-(this.tileSize/2),
-            this.tileSize,
-            this.tileSize
+            finalX,
+            finalY,
+            this.game.tileSize,
+            this.game.tileSize
         )
         
         if(this.game.DEBUG.playerDirection){
             this.ctx2.fillStyle = "red"
-            this.ctx2.fillRect(400,400,this.tileSize,1)
+            this.ctx2.fillRect(this.width/2,this.height/2,this.game.tileSize,1)
         }
 
         this.ctx2.restore()
 
         if(this.game.DEBUG.centerLines){
             this.ctx2.fillStyle = "rgba(255,255,0,0.15)"
-            this.ctx2.fillRect(0,400,800,1)
-            this.ctx2.fillRect(400,0,1,800)
+            this.ctx2.fillRect(0,this.height/2,this.width,1)
+            this.ctx2.fillRect(this.width/2,0,1,this.height)
         }
 
         if(this.game.DEBUG.tileNumbers){
             this.ctx.font = "12px Arial";
             this.ctx.fillStyle = "yellow"
-            this.ctx.fillText(`${Math.floor(this.game.player.position.x/this.tileSize)} - ${Math.floor(this.game.player.position.y/this.tileSize)}`, 400, 400);
+            this.ctx.fillText(`${Math.floor(this.game.player.x/this.game.tileSize)} - ${Math.floor(this.game.player.y/this.game.tileSize)}`, this.width, this.height);
         }
     }
 
@@ -201,11 +225,11 @@ export default class Graphics{
         this.game.enemies.forEach( enemy => {
             if(enemy.pathToPlayer !== null){
                 enemy.pathToPlayer.forEach( tile => {
-                    const finalX = (tile.x * this.tileSize) + this.viewport.offset.x
-                    const finalY = (tile.y * this.tileSize) + this.viewport.offset.y
+                    const finalX = (tile.x * this.game.tileSize) + this.viewport.offset.x
+                    const finalY = (tile.y * this.game.tileSize) + this.viewport.offset.y
                     
                     this.ctx2.fillStyle = "rgba(255,255,0,0.1)"
-                    this.ctx2.fillRect(finalX,finalY,this.tileSize,this.tileSize)
+                    this.ctx2.fillRect(finalX,finalY,this.game.tileSize,this.game.tileSize)
                 })
             }
         })
@@ -215,8 +239,8 @@ export default class Graphics{
 
         this.game.enemies.forEach( enemy => {
             
-            const finalX = enemy.position.x + this.viewport.offset.x -(enemy.size/2)
-            const finalY = enemy.position.y + this.viewport.offset.y -(enemy.size/2)
+            const finalX = enemy.x + this.viewport.offset.x -(enemy.size/2)
+            const finalY = enemy.y + this.viewport.offset.y -(enemy.size/2)
 
             const healthPercent = enemy.hp/enemy.maxHp
 
@@ -272,22 +296,22 @@ export default class Graphics{
         const {player} = this.game
 
         if(this.game.player.selectedWeapon.type === "rifle"){
-            this.ctx2.drawImage(this.rifleIcon,500,700,300,100);
+            this.ctx2.drawImage(this.rifleIcon,this.width-300,this.height-100,300,100);
             this.ctx2.font = "30px Arial";
             this.ctx2.fillStyle = "white"
-            this.ctx2.fillText(`${this.game.player.selectedWeapon.rounds} / ${this.game.player.selectedWeapon.extraRounds}`, 390, 780);
+            this.ctx2.fillText(`${this.game.player.selectedWeapon.rounds} / ${this.game.player.selectedWeapon.extraRounds}`, this.width-410, this.height-20);
         }
         else if(this.game.player.selectedWeapon.type === "pistol"){
-            this.ctx2.drawImage(this.pistolIcon,625,690,175,100);
+            this.ctx2.drawImage(this.pistolIcon,this.width-175,this.height-110,175,100);
             this.ctx2.font = "30px Arial";
             this.ctx2.fillStyle = "white"
-            this.ctx2.fillText(`${this.game.player.selectedWeapon.rounds} / ${this.game.player.selectedWeapon.extraRounds}`, 555, 780);
+            this.ctx2.fillText(`${this.game.player.selectedWeapon.rounds} / ${this.game.player.selectedWeapon.extraRounds}`, this.width-245, this.height-20);
         }
         else if(this.game.player.selectedWeapon.type === "shotgun"){
-            this.ctx2.drawImage(this.shotgunIcon,500,705,300,100);
+            this.ctx2.drawImage(this.shotgunIcon,this.width-300,this.height-95,300,100);
             this.ctx2.font = "30px Arial";
             this.ctx2.fillStyle = "white"
-            this.ctx2.fillText(`${this.game.player.selectedWeapon.rounds} / ${this.game.player.selectedWeapon.extraRounds}`, 425, 785);
+            this.ctx2.fillText(`${this.game.player.selectedWeapon.rounds} / ${this.game.player.selectedWeapon.extraRounds}`, this.width-375, this.height-15);
         }
 
         // hp
@@ -295,7 +319,7 @@ export default class Graphics{
         const healthPercent = player.hp/player.maxHp
 
         this.ctx2.fillStyle = "rgb(168, 56, 50)"
-        this.ctx2.fillRect(25,25,400,40)
+        this.ctx2.fillRect(15,15,400,40)
 
         if(healthPercent >= 0.8){
             this.ctx2.fillStyle = "rgb(50, 168, 82)"
@@ -311,12 +335,27 @@ export default class Graphics{
         }else{
             this.ctx2.fillStyle = "rgb(168, 56, 50)"
         }
-        this.ctx2.fillRect(25,25,400*healthPercent,40)
+        this.ctx2.fillRect(15,15,400*healthPercent,40)
+
+        // stamina
+
+        const staminaPercent = player.stamina/100
+
+        this.ctx2.fillStyle = "rgb(150, 150, 150)"
+        this.ctx2.fillRect(15,60,400,10)
+
+        if(staminaPercent <= 0.25){
+            this.ctx2.fillStyle = "rgb(255, 51, 0)"
+        }else{
+            this.ctx2.fillStyle = "rgb(255, 255, 153)"
+        }
+
+        this.ctx2.fillRect(15,60,400*staminaPercent,10)
         
     }
 
     update(){
-        this.updateViewport(this.game.player.position.x,this.game.player.position.y)
+        this.updateViewport(this.game.player.x,this.game.player.y)
         this.drawViewport()
         this.drawPlayer()
         this.drawBullets()
